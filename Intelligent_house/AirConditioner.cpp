@@ -17,7 +17,7 @@ CAirConditioner::~CAirConditioner()
 
 void CAirConditioner::SetAirConditionerON()
 {
-  MyStatus = 1;
+  iMyStatus = 1;
 }
 
 void CAirConditioner::SetAirConditionerOFF()

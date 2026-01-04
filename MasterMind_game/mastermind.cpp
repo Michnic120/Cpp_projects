@@ -4,7 +4,7 @@
 #include <ctime>
 #include <cstdlib>
 
-std::vector<char>
+using namespace std;
 
 int main()
 {

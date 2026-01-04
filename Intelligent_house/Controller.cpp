@@ -11,7 +11,7 @@ using namespace std;
 CController::CController(CAirConditioner * condd, CRoom* room, int temtem)
 {
   dTempSet = temtem;
-  cond1 = condd;
+  cond = condd;
   room1 = room;
 }
 
@@ -41,6 +41,6 @@ double CController::GiveTemp()
 
 void CController::Control()
 {
-  if (room1->GiveTem() < dTempSet - 0.5) { cond1->SetAirConditionerOFF(); }
-  if (room1->GiveTem() > dTempSet + 0.5) { cond1->SetAirConditionerON(); }
+  if (room1->GiveTem() < dTempSet - 0.5) { cond->SetAirConditionerOFF(); }
+  if (room1->GiveTem() > dTempSet + 0.5) { cond->SetAirConditionerON(); }
 }

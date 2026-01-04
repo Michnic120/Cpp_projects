@@ -174,7 +174,7 @@ int main()
     for(int i = 0; i != n; i++)
     {
         clock5[i] = clock();
-        quicksortParallel(vec, 0, vec.size() - 1);
+        quicksortParallel(vec);
         clock5[i] = clock() - clock5[i];
     }
 

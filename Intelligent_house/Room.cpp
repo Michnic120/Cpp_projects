@@ -16,7 +16,7 @@ CRoom::CRoom(CAirConditioner * condd, float dec, float inc, short num)
 {
   dActualTem = 18;
   cond1 = condd;
-  plus = inc
+  plus = inc;
   minus = dec;
   number = num;
   

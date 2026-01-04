@@ -5,7 +5,7 @@ class CAirConditioner
   private:
       int iMyStatus;
   public:
-      AirConditioner();
+      CAirConditioner();
       ~AirConditioner();
       void SetAirConditionerON();
       void SetAirConditionerOFF();

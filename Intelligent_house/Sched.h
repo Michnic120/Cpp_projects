@@ -12,7 +12,7 @@ class CSched
     CController *con1, *con2, *con3, *con4, *con5;
      CSched(CRoom *rom1, CController *cont1, CRoom *rom2, CController *cont2, 
             CRoom *rom3, CController *cont3, CRoom *rom4, CController *cont4, 
-            CRoom *rom5, CController *cont5, int cycle)
+            CRoom *rom5, CController *cont5, int cycle);
     ~CSched();
   
     void Starter();

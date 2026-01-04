@@ -1,4 +1,4 @@
-pragma once
+#pragma once
 #include"AirConditioner.h"
 
 class CRoom

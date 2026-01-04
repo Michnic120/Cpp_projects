@@ -42,11 +42,11 @@ void CSched::Starter()
 	{
 		
 		cout << "           Current temperature:       Temperature on controller:" << endl;
-		cout << "Attic:                             " << room1->GiveTem() << endl << "                                                                  " << st1->DajTemperature() << endl;
-		cout << "Living room:                       " << room2->GiveTem() << endl << "                                                                  " << st2->DajTemperature() << endl;
-		cout << "Bed room:                          " << room3->GiveTem() << endl << "                                                                  " << st3->DajTemperature() << endl;
-		cout << "Garage:                            " << room4->GiveTem() << endl << "                                                                  " << st4->DajTemperature() << endl;
-		cout << "Cellar:                            " << room5->GiveTem() << endl << "                                                                  " << st5->DajTemperature() << endl;
+		cout << "Attic:                             " << room1->GiveTem() << "                                  " << con1->GiveTemp() << endl;
+		cout << "Living room:                       " << room2->GiveTem() << "                                  " << con2->GiveTemp() << endl;
+		cout << "Bed room:                          " << room3->GiveTem() << "                                  " << con3->GiveTemp() << endl;
+		cout << "Garage:                            " << room4->GiveTem() << "                                  " << con4->GiveTemp() << endl;
+		cout << "Cellar:                            " << room5->GiveTem() << "                                  " << con5->GiveTemp() << endl;
 		
 		room1->ChangeTem(); 
 		room2->ChangeTem();
