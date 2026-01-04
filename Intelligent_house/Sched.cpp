@@ -1,97 +1,134 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include "Sched.h"
-#include <string.h>
-#include <iostream>
-#include <stdlib.h>
-#include <cstdlib>
 #include "Controller.h"
-#include <windows.h>
-#include <conio.h>
+#include <iostream>
 #include <string>
+#include <thread>
+#include <chrono>
+#include <iomanip>
 
-using namespace std;
-VOID WINAPI Sleep(DWORD dwMilliseconds);
+#ifdef _WIN32
+    #include <windows.h>
+    #include <conio.h>
+#endif
 
-CSched::CSched(CRoom *rom1, CController *cont1, CRoom *rom2, CController *cont2, CRoom *rom3, CController *cont3, CRoom *rom4, CController *cont4, CRoom *rom5, CController *cont5, int cycle)
-{
-	iTimeCycle = cycle;
-	
-	room1 = rom1;
-	con1 = cont1;
-	
-	room2 = rom2;
-	con2 = cont2;
-	
-	room3 = rom3;
-	con3 = cont3;
-	
-	room4 = rom4;
-	con4 = cont4;
-	
-	room5 = rom5;
-	con5 = cont5;
+CSched::CSched(CRoom* rom1, CController* cont1, CRoom* rom2, CController* cont2,
+               CRoom* rom3, CController* cont3, CRoom* rom4, CController* cont4,
+               CRoom* rom5, CController* cont5, int cycle)
+    : iTimeCycle(cycle),
+      room1(rom1), con1(cont1),
+      room2(rom2), con2(cont2),
+      room3(rom3), con3(cont3),
+      room4(rom4), con4(cont4),
+      room5(rom5), con5(cont5) {
+    // C++11: Member initializer list
 }
 
-CSched::~CSched()
-{
+CSched::~CSched() {
+    // Destructor
 }
 
-void CSched::Starter()
-{
-	for (int i=0;i<=iTimeCycle;i++) 
-	{
-		
-		cout << "           Current temperature:       Temperature on controller:" << endl;
-		cout << "Attic:                             " << room1->GiveTem() << "                                  " << con1->GiveTemp() << endl;
-		cout << "Living room:                       " << room2->GiveTem() << "                                  " << con2->GiveTemp() << endl;
-		cout << "Bed room:                          " << room3->GiveTem() << "                                  " << con3->GiveTemp() << endl;
-		cout << "Garage:                            " << room4->GiveTem() << "                                  " << con4->GiveTemp() << endl;
-		cout << "Cellar:                            " << room5->GiveTem() << "                                  " << con5->GiveTemp() << endl;
-		
-		room1->ChangeTem(); 
-		room2->ChangeTem();
-		room3->ChangeTem();
-		room4->ChangeTem();
-		room5->ChangeTem();
-		
-		if (_kbhit()) {
-			string a;
-			cin >> a;
-
-			if (a == "attic+")con1->IncreaseTemp(); 
-			if (a == "attic-")con1->DecreaseTemp();
-			
-			if (a == "livroom+")con2->IncreaseTemp(); 
-			if (a == "livroom-")con2->DecreaseTemp();
-			
-			if (a == "bedroom+")con3->IncreaseTemp(); 
-			if (a == "bedroom-")con3->DecreaseTemp();
-			
-			if (a == "garage+")con4->IncreaseTemp(); 
-			if (a == "garage-")con4->DecreaseTemp();
-			
-			if (a == "cellar+")con5->IncreaseTemp(); 
-			if (a == "cellar-")con5->DecreaseTemp();
-
-			if (a == "atticwindow+") { room1->plus *= 1.5; cout << "Window in attic opened."; }
-			if (a == "atticwindow-") { room1->plus /= 1.5; cout << "Window in attic closed."; }
-		
-			if (a == "livroomwindow+"){room2->plus *= 1.5; cout << "Window in living room opened.";}
-			if (a == "livroomwindow-"){room2->plus /= 1.5; cout << "Window in living room closed.";}
-
-			if (a == "bedroomwindow+"){room3->plus *= 1.5; cout << "Window in bed room opened.";}
-			if (a == "bedroomwindow-"){room3->plus /= 1.5; cout << "Window in bed room closed.";}
-		
-		}
-		
-		con1->Control();
-		con2->Control();
-		con3->Control();
-		con4->Control();
-		con5->Control();
-		
-		Sleep(500);
-		system("cls");
-	}
-
+void CSched::clearScreen() {
+    #ifdef _WIN32
+        system("cls");
+    #else
+        std::cout << "\033[2J\033[1;1H";
+    #endif
 }
+
+void CSched::Starter() {
+    using namespace std::chrono_literals;  // C++14
+    
+    const std::array<std::string, 5> roomNames = {
+        "Attic", "Living room", "Bedroom", "Garage", "Cellar"
+    };
+    
+    std::array<CRoom*, 5> rooms = {room1, room2, room3, room4, room5};
+    std::array<CController*, 5> controllers = {con1, con2, con3, con4, con5};
+    
+    for (int i = 0; i <= iTimeCycle; ++i) {
+        clearScreen();
+        
+        // Display header
+        std::cout << "=== Intelligent House Climate Control ===\n";
+        std::cout << "Cycle: " << i << "/" << iTimeCycle << "\n\n";
+        std::cout << std::left 
+                  << std::setw(15) << "Room"
+                  << std::setw(20) << "Current Temp (°C)"
+                  << std::setw(20) << "Target Temp (°C)"
+                  << "AC Status\n";
+        std::cout << std::string(70, '-') << "\n";
+        
+        // Display room information
+        for (size_t j = 0; j < rooms.size(); ++j) {
+            std::cout << std::left
+                      << std::setw(15) << roomNames[j]
+                      << std::setw(20) << std::fixed << std::setprecision(1) 
+                      << rooms[j]->GiveTem()
+                      << std::setw(20) << controllers[j]->GiveTemp()
+                      << (rooms[j]->cond1->GiveStatus() ? "ON" : "OFF") << "\n";
+        }
+        
+        std::cout << "\nCommands: room+/- (e.g., attic+), roomwindow+/- (e.g., atticwindow+)\n";
+        std::cout << "Available rooms: attic, livroom, bedroom, garage, cellar\n";
+        
+        // Update temperatures
+        for (auto* room : rooms) {
+            room->ChangeTem();
+        }
+        
+        // Check for user input (non-blocking on Windows)
+        #ifdef _WIN32
+        if (_kbhit()) {
+            std::string command;
+            std::cin >> command;
+            
+            // Temperature controls
+            if (command == "attic+") con1->IncreaseTemp();
+            else if (command == "attic-") con1->DecreaseTemp();
+            else if (command == "livroom+") con2->IncreaseTemp();
+            else if (command == "livroom-") con2->DecreaseTemp();
+            else if (command == "bedroom+") con3->IncreaseTemp();
+            else if (command == "bedroom-") con3->DecreaseTemp();
+            else if (command == "garage+") con4->IncreaseTemp();
+            else if (command == "garage-") con4->DecreaseTemp();
+            else if (command == "cellar+") con5->IncreaseTemp();
+            else if (command == "cellar-") con5->DecreaseTemp();
+            
+            // Window controls
+            else if (command == "atticwindow+") {
+                room1->plus *= 1.5f;
+                std::cout << "\nAttic window opened.\n";
+            }
+            else if (command == "atticwindow-") {
+                room1->plus /= 1.5f;
+                std::cout << "\nAttic window closed.\n";
+            }
+            else if (command == "livroomwindow+") {
+                room2->plus *= 1.5f;
+                std::cout << "\nLiving room window opened.\n";
+            }
+            else if (command == "livroomwindow-") {
+                room2->plus /= 1.5f;
+                std::cout << "\nLiving room window closed.\n";
+            }
+            else if (command == "bedroomwindow+") {
+                room3->plus *= 1.5f;
+                std::cout << "\nBedroom window opened.\n";
+            }
+            else if (command == "bedroomwindow-") {
+                room3->plus /= 1.5f;
+                std::cout << "\nBedroom window closed.\n";
+            }
+        }
+        #endif
+        
+        // Run controllers
+        for (auto* controller : controllers) {
+            controller->Control();
+        }
+        
+        // C++11: Use chrono instead of Sleep
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+}
+

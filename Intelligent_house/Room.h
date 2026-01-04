@@ -1,19 +1,20 @@
 #pragma once
-#include"AirConditioner.h"
+#include "AirConditioner.h"
 
-class CRoom
-{
-  private:
+class CRoom {
+private:
     double dActualTem;
-  public:
+    
+public:
+    CAirConditioner* cond1;
+    short number;
+    float plus;   // Temperature increase rate
+    float minus;  // Temperature decrease rate
+    
     CRoom();
-    CRoom(CAirConditioner *condd, float dec, float inc, short num);
+    CRoom(CAirConditioner* condd, float dec, float inc, short num);
     ~CRoom();
-   
-  CAirConditioner *cond1;
-  short number;
-  float plus, minus;
-  void ChangeTem();
-  double GiveTem();
-
+    
+    void ChangeTem();
+    double GiveTem() const;
 };

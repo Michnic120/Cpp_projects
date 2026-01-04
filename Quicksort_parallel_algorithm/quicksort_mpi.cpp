@@ -1,53 +1,60 @@
-#include<algorithm>
-#include<iostream>
-#include<numeric>
-#include<stack>
-#include<vector>
+#include <algorithm>
+#include <iostream>
+#include <numeric>
+#include <vector>
+#include <cmath>
+#include <random>
+#include <mpi.h>
 
-#include<cmath>
-#include<ctime>
+// Modern C++11/14: constexpr functions for index calculation
+constexpr int calcBeginIndex(int vecSize, int myRank, int numOfProc) {
+    return vecSize * myRank / numOfProc;
+}
 
-#include<mpi.h>
-
-#define I_BEGIN(vecSize, myRank, numOfProc) (vecSize*myRank/numOfProc)
-#define I_END(vecSize, myRank, numOfProc)   (vecSize*(myRank+1)/numOfProc)
+constexpr int calcEndIndex(int vecSize, int myRank, int numOfProc) {
+    return vecSize * (myRank + 1) / numOfProc;
+}
 
 using itVec = std::vector<int>::iterator;
 
-int main(int argc, char* argv[])
-{
-    const int root = 0;
-    const int size = 20;
-    const int m = 1000;
+int main(int argc, char* argv[]) {
+    constexpr int root = 0;
+    constexpr int size = 20;
+    constexpr int m = 1000;
     int numOfProc;
     int myRank;
-    double clock;
+    double clockTime;
     std::vector<int> vec(size);
-
-    std::generate(vec.begin(), vec.end(), []() {return rand() % m;});
+    
+    // C++11: Use better random number generation
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, m - 1);
+    std::generate(vec.begin(), vec.end(), [&]() { return dist(gen); });
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &numOfProc);
     MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-
-    if (myRank == 0 && (size < pow(numOfProc, 2) || numOfProc == 1))
-    {
-        std::cout << "Initial condition not fulfilled!";
+    
+    // Check initial conditions
+    if (myRank == 0 && (size < std::pow(numOfProc, 2) || numOfProc == 1)) {
+        std::cout << "Initial condition not fulfilled! ";
+        std::cout << "Size must be >= num_processes^2\n";
+        MPI_Finalize();
         return 0;
     }
-
-    if (myRank == 0)
-    {
+    
+    if (myRank == 0) {
         std::cout << "Available processors: " << numOfProc << "\n"
-                  << "\n General before sort: \n\t";
-        for (const auto& iter : vec)
-        {
-            std::cout << iter << " ";
+                  << "\nArray before sort:\n\t";
+        for (const auto& val : vec) {
+            std::cout << val << " ";
         }
+        std::cout << "\n";
     }
-
-    int indexBegin = I_BEGIN(size, myRank, numOfProc);
-    int indexEnd = I_END(size, myRank, numOfProc);
+    
+    int indexBegin = calcBeginIndex(size, myRank, numOfProc);
+    int indexEnd = calcEndIndex(size, myRank, numOfProc);
     int lenSum = 0;
 
     itVec iterBegin = vec.begin() + indexBegin;
@@ -63,7 +70,7 @@ int main(int argc, char* argv[])
     std::vector<int> partVec(iterBegin, iterEnd);
     std::vector<int> gatherRegSamples;
 
-    clock = MPI_Wtime();
+    clockTime = MPI_Wtime();
 
     std::sort(partVec.begin(), partVec.end());
 
@@ -141,18 +148,16 @@ int main(int argc, char* argv[])
             vec.data(), recvLength.data(), recvIndex.data(), MPI_INT,
             root, MPI_COMM_WORLD);
 
-    clock = MPI_Wtime() - clock;
-
-    if (myRank == root)
-    {
-        std::cout << "\n\n Gathered after sort: \n\t";
-        for (const auto& iter : vec)
-        {
-             std::cout << iter << " ";
+    clockTime = MPI_Wtime() - clockTime;
+    
+    if (myRank == root) {
+        std::cout << "\nArray after sort:\n\t";
+        for (const auto& val : vec) {
+            std::cout << val << " ";
         }
-        std::cout << "\n\n Processing time: \n\t" << clock << "\n";
+        std::cout << "\n\nProcessing time: " << clockTime << " seconds\n";
     }
-
+    
     MPI_Finalize();
     return 0;
 }

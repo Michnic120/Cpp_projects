@@ -1,112 +1,95 @@
-#include<iostream>
-#include<vector>
-#include<algorithm>
-#include<numeric>
-#include<ctime>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <numeric>
+#include <chrono>
+#include <random>
 
-double timeSum(const std::vector<double>& timeVec, const int& n)
-{
-    return std::accumulate(timeVec.begin(), timeVec.end(), 0.0000) / (CLOCKS_PER_SEC * n);
+// C++11/14: Use chrono for timing
+double timeSum(const std::vector<double>& timeVec) {
+    double sum = std::accumulate(timeVec.begin(), timeVec.end(), 0.0);
+    return sum / timeVec.size();
 }
 
-void swap(int* a, int* b)
-{
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-int partition(std::vector<int>& vec, int l, int h)
-{
+// C++11: Use std::swap instead of custom swap
+int partition(std::vector<int>& vec, int l, int h) {
     int pivot = vec[h];
     int i = l - 1;
-
-    for (int j = l; j <= h - 1; j++)
-    {
-        if (vec[j] <= pivot)
-        {
-            i++;
-            if (i != j)
-            {
-               swap(&vec[i], &vec[j]);
+    
+    for (int j = l; j <= h - 1; ++j) {
+        if (vec[j] <= pivot) {
+            ++i;
+            if (i != j) {
+                std::swap(vec[i], vec[j]);
             }
         }
     }
-
-    swap(&vec[i+1], &vec[h]);
+    
+    std::swap(vec[i + 1], vec[h]);
     return i + 1;
 }
 
-void quicksortWhile(std::vector<int> vec, int l, int h)
-{
+void quicksortWhile(std::vector<int>& vec, int l, int h) {
     int i = l;
     int j = h;
-    int pivot = vec[(l+h) >> 1];
-
-    do
-    {
-        while(vec[i] < pivot) i++;
-        while(vec[j] > pivot) j--;
-        if(i <= j)
-        {
-            swap(&vec[i++], &vec[j--]);
+    int pivot = vec[(l + h) >> 1];  // Bit shift for divide by 2
+    
+    do {
+        while (vec[i] < pivot) ++i;
+        while (vec[j] > pivot) --j;
+        if (i <= j) {
+            std::swap(vec[i++], vec[j--]);
         }
-    }while(i <= j);
-
-    if(l < j) quicksortWhile(vec, l, j);
-    if(h > i) quicksortWhile(vec, i, h);
+    } while (i <= j);
+    
+    if (l < j) quicksortWhile(vec, l, j);
+    if (h > i) quicksortWhile(vec, i, h);
 }
 
-void quicksortFor(std::vector<int> vec, int l, int h)
-{
-    if (l < h)
-    {
+void quicksortFor(std::vector<int>& vec, int l, int h) {
+    if (l < h) {
         int p = partition(vec, l, h);
         quicksortFor(vec, l, p - 1);
         quicksortFor(vec, p + 1, h);
     }
 }
 
-void quicksortForOpt(std::vector<int> vec, int l, int h)
-{
-    int stack[h - l + 1];
-    int top = -1;
-
-    stack[++top] = l;
-    stack[++top] = h;
-
-    while (top >= 0)
-    {
-        h = stack[top--];
-        l = stack[top--];
-
+void quicksortForOpt(std::vector<int>& vec, int l, int h) {
+    std::vector<int> stack;  // C++11: Use vector instead of raw array
+    stack.reserve(h - l + 1);
+    
+    stack.push_back(l);
+    stack.push_back(h);
+    
+    while (!stack.empty()) {
+        h = stack.back(); stack.pop_back();
+        l = stack.back(); stack.pop_back();
+        
         int p = partition(vec, l, h);
-
-        if (p - 1 > l)
-        {
-            stack[++top] = l;
-            stack[++top] = p - 1;
+        
+        if (p - 1 > l) {
+            stack.push_back(l);
+            stack.push_back(p - 1);
         }
-
-        if (p + 1 < h)
-        {
-            stack[++top] = p + 1;
-            stack[++top] = h;
+        
+        if (p + 1 < h) {
+            stack.push_back(p + 1);
+            stack.push_back(h);
         }
     }
 }
 
-void quicksortParallel(std::vector<int> vec)
-{
-    int num_threads = 4;
+void quicksortParallel(std::vector<int>& vec) {
+    constexpr int num_threads = 4;
     int div = vec.size() / num_threads;
     std::vector<std::vector<int>> vecVec;
-
-    for(int i = 0; i < num_threads; i++)
-    {
-        vecVec.emplace_back(vec.begin() + div*i, vec.begin() + div*(i+1));
+    vecVec.reserve(num_threads);
+    
+    for (int i = 0; i < num_threads; ++i) {
+        vecVec.emplace_back(vec.begin() + div * i, 
+                           vec.begin() + div * (i + 1));
     }
-
+    
     #pragma omp parallel sections
     {
         #pragma omp section
@@ -117,7 +100,6 @@ void quicksortParallel(std::vector<int> vec)
         {
             quicksortForOpt(vecVec[1], 0, vecVec[1].size() - 1);
         }
-
         #pragma omp section
         {
             quicksortForOpt(vecVec[2], 0, vecVec[2].size() - 1);
@@ -127,63 +109,86 @@ void quicksortParallel(std::vector<int> vec)
             quicksortForOpt(vecVec[3], 0, vecVec[3].size() - 1);
         }
     }
-
-    std::vector<int> temp1(vec.size()/2, 0), temp2(vec.size()/2, 0);
-
-    std::merge(vecVec[0].begin(),  vecVec[0].end(),  vecVec[1].begin(),  vecVec[1].end(),  temp1.begin());
-    std::merge(vecVec[2].begin(),  vecVec[2].end(),  vecVec[3].begin(),  vecVec[3].end(),  temp2.begin());
-    std::merge(temp1.begin(), temp1.end(), temp2.begin(), temp2.end(), vec.begin());
+    
+    std::vector<int> temp1(vec.size() / 2);
+    std::vector<int> temp2(vec.size() / 2);
+    
+    std::merge(vecVec[0].begin(), vecVec[0].end(), 
+               vecVec[1].begin(), vecVec[1].end(), temp1.begin());
+    std::merge(vecVec[2].begin(), vecVec[2].end(), 
+               vecVec[3].begin(), vecVec[3].end(), temp2.begin());
+    std::merge(temp1.begin(), temp1.end(), 
+               temp2.begin(), temp2.end(), vec.begin());
 }
 
-int main()
-{
-    const int n = 50, s = 500, m = 1024;
-    std::vector<double> clock1(n), clock2(n), clock3(n), clock4(n), clock5(n);
+int main() {
+    constexpr int n = 50;   // Number of repetitions
+    constexpr int s = 500;  // Array size
+    constexpr int m = 1024; // Max random value
+    
+    std::vector<double> time1(n), time2(n), time3(n), time4(n), time5(n);
     std::vector<int> vec(s);
-    std::generate(vec.begin(), vec.end(), []() {return rand() % m;});
-    auto vec1(vec);
-
-    for(int i = 0; i != n; i++)
-    {
-        clock1[i] = clock();
+    
+    // C++11: Better random number generation
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dist(0, m - 1);
+    std::generate(vec.begin(), vec.end(), [&]() { return dist(gen); });
+    
+    auto vec1(vec);  // Copy for std::sort
+    
+    // Benchmark std::sort
+    for (int i = 0; i < n; ++i) {
+        auto start = std::chrono::high_resolution_clock::now();
         std::sort(vec1.begin(), vec1.end());
-        clock1[i] = clock() - clock1[i];
+        auto end = std::chrono::high_resolution_clock::now();
+        time1[i] = std::chrono::duration<double>(end - start).count();
+        vec1 = vec;  // Reset
     }
-
-    for(int i = 0; i != n; i++)
-    {
-        clock2[i] = clock();
-        quicksortWhile(vec, 0, vec.size() - 1);
-        clock2[i] = clock() - clock2[i];
+    
+    // Benchmark while-loop quicksort
+    for (int i = 0; i < n; ++i) {
+        auto vec2 = vec;
+        auto start = std::chrono::high_resolution_clock::now();
+        quicksortWhile(vec2, 0, vec2.size() - 1);
+        auto end = std::chrono::high_resolution_clock::now();
+        time2[i] = std::chrono::duration<double>(end - start).count();
     }
-
-    for(int i = 0; i != n; i++)
-    {
-        clock3[i] = clock();
-        quicksortFor(vec, 0, vec.size() - 1);
-        clock3[i] = clock() - clock3[i];
+    
+    // Benchmark for-loop quicksort
+    for (int i = 0; i < n; ++i) {
+        auto vec3 = vec;
+        auto start = std::chrono::high_resolution_clock::now();
+        quicksortFor(vec3, 0, vec3.size() - 1);
+        auto end = std::chrono::high_resolution_clock::now();
+        time3[i] = std::chrono::duration<double>(end - start).count();
     }
-
-    for(int i = 0; i != n; i++)
-    {
-        clock4[i] = clock();
-        quicksortForOpt(vec, 0, vec.size() - 1);
-        clock4[i] = clock() - clock4[i];
+    
+    // Benchmark optimized quicksort
+    for (int i = 0; i < n; ++i) {
+        auto vec4 = vec;
+        auto start = std::chrono::high_resolution_clock::now();
+        quicksortForOpt(vec4, 0, vec4.size() - 1);
+        auto end = std::chrono::high_resolution_clock::now();
+        time4[i] = std::chrono::duration<double>(end - start).count();
     }
-
-    for(int i = 0; i != n; i++)
-    {
-        clock5[i] = clock();
-        quicksortParallel(vec);
-        clock5[i] = clock() - clock5[i];
+    
+    // Benchmark parallel quicksort
+    for (int i = 0; i < n; ++i) {
+        auto vec5 = vec;
+        auto start = std::chrono::high_resolution_clock::now();
+        quicksortParallel(vec5);
+        auto end = std::chrono::high_resolution_clock::now();
+        time5[i] = std::chrono::duration<double>(end - start).count();
     }
-
-    std::cout << "\n Repetition number: " << n;
-    std::cout << "\n1. std::sort                    : "<< timeSum(clock1, n);
-    std::cout << "\n2. while loop                   : "<< timeSum(clock2, n);
-    std::cout << "\n3. for loop                     : "<< timeSum(clock3, n);
-    std::cout << "\n4. for loop optimized           : "<< timeSum(clock4, n) << "\n";
-    std::cout << "\n5. for loop optimized, parallel : "<< timeSum(clock5, n) << "\n";
-
+    
+    std::cout << "\n=== Quicksort Performance Comparison ===\n";
+    std::cout << "Array size: " << s << " | Repetitions: " << n << "\n\n";
+    std::cout << "1. std::sort                    : " << timeSum(time1) << " seconds\n";
+    std::cout << "2. While-loop quicksort         : " << timeSum(time2) << " seconds\n";
+    std::cout << "3. For-loop quicksort           : " << timeSum(time3) << " seconds\n";
+    std::cout << "4. Optimized iterative quicksort: " << timeSum(time4) << " seconds\n";
+    std::cout << "5. OpenMP parallel quicksort    : " << timeSum(time5) << " seconds\n\n";
+    
     return 0;
 }

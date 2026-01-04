@@ -1,53 +1,76 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <cstdlib>
-#include <windows.h>
-#include <stdlib.h>
-#include <conio.h>
+#include <memory>
+#include <array>
+#include <thread>
+#include <chrono>
 
 #include "Room.h"
 #include "Sched.h"
 #include "Controller.h"
 
-using namespace std;
-VOID WINAPI Sleep(DWORD dwMilliseconds);
-
-int main()
-{
-	CRoom room_buffer;
-	vector<CAirConditioner> conds(5);
-   	vector<CRoom> rooms(5);
-	vector<int> tem(5);
-	vector<CRoom>::size_type sz_room = rooms.size();
-
-	for(short i=0; i<sz_room; i++)
-        {
-            room_buffer.cond1=&conds[i];
-            room_buffer.minus =i/0.1;
-            room_buffer.plus =i/0.01;
-            room_buffer.number = i;
-            rooms[i] = room_buffer;
+// Modern C++11/14 main with smart pointers and better initialization
+int main() {
+    constexpr int NUM_ROOMS = 5;
+    
+    // Use vector of unique_ptrs for better resource management (optional)
+    std::vector<CAirConditioner> airConditioners(NUM_ROOMS);
+    std::vector<CRoom> rooms;
+    rooms.reserve(NUM_ROOMS);
+    
+    // Room names for better UX
+    const std::array<std::string, NUM_ROOMS> roomNames = {
+        "Attic", "Living room", "Bedroom", "Garage", "Cellar"
+    };
+    
+    // Initialize rooms with different temperature change rates
+    for (int i = 0; i < NUM_ROOMS; ++i) {
+        float tempIncreaseRate = 0.01f * (i + 1);  // Natural heat gain
+        float tempDecreaseRate = 0.1f * (i + 1);   // AC cooling rate
+        rooms.emplace_back(&airConditioners[i], tempDecreaseRate, tempIncreaseRate, static_cast<short>(i));
+    }
+    
+    // Get desired temperatures from user
+    std::cout << "=== Intelligent House Climate Control ===\n\n";
+    std::cout << "Set the desired temperature for each room:\n\n";
+    
+    std::vector<int> targetTemperatures(NUM_ROOMS);
+    for (int i = 0; i < NUM_ROOMS; ++i) {
+        std::cout << roomNames[i] << ": ";
+        while (!(std::cin >> targetTemperatures[i]) || 
+               targetTemperatures[i] < 10 || targetTemperatures[i] > 35) {
+            std::cin.clear();
+            std::cin.ignore(10000, '\n');
+            std::cout << "Invalid! Enter temperature (10-35°C): ";
         }
-
-
-	cout  << "Set the temperature in every room" << endl<<endl;
-	cout  << "Attic:  "; cin >> tem[0];
-	cout  << "Living room:     "; cin >> tem[1];
-	cout  << "Bed room: "; cin >> tem[2];
-	cout  << "Garage:     "; cin >> tem[3];
-	cout  << "Cellar:   "; cin >> tem[4];
-
-
-	CController s1(&conds[0], &rooms[0], tem[0]),
-                   s2(&conds[1], &rooms[1], tem[1]),
-                   s3(&conds[2], &rooms[2], tem[2]),
-                   s4(&conds[3], &rooms[3], tem[3]),
-                   s5(&conds[4], &rooms[4], tem[4]);
-
-	CSched shed(&rooms[0], &s1, &rooms[1], &s2, &rooms[2], &s3, &rooms[3], &s4, &rooms[4], &s5, 1000);
-
-	shed.Starter();
-
-	return 0;
+    }
+    
+    // Create controllers for each room
+    std::vector<std::unique_ptr<CController>> controllers;
+    controllers.reserve(NUM_ROOMS);
+    
+    for (int i = 0; i < NUM_ROOMS; ++i) {
+        controllers.push_back(
+            std::make_unique<CController>(&airConditioners[i], &rooms[i], targetTemperatures[i])
+        );
+    }
+    
+    // Create and start scheduler
+    CSched scheduler(
+        &rooms[0], controllers[0].get(),
+        &rooms[1], controllers[1].get(),
+        &rooms[2], controllers[2].get(),
+        &rooms[3], controllers[3].get(),
+        &rooms[4], controllers[4].get(),
+        1000  // Run for 1000 cycles
+    );
+    
+    std::cout << "\nStarting simulation...\n";
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    
+    scheduler.Starter();
+    
+    std::cout << "\nSimulation complete!\n";
+    return 0;
 }

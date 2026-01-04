@@ -1,46 +1,42 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <string.h>
-#include <iostream>
-#include <stdlib.h>
 #include "Controller.h"
 #include "AirConditioner.h"
 #include "Room.h"
 
-using namespace std;
-
-CController::CController(CAirConditioner * condd, CRoom* room, int temtem)
-{
-  dTempSet = temtem;
-  cond = condd;
-  room1 = room;
+CController::CController(CAirConditioner* condd, CRoom* room, int temtem)
+    : dTempSet(static_cast<double>(temtem)), cond(condd), room1(room) {
+    // C++11: Member initializer list
 }
 
-CController::~CController()
-{
+CController::~CController() {
+    // Destructor
 }
 
-void CController::SetTemp(float temp)
-{
-  dTempSet = temp;
+void CController::SetTemp(float temp) {
+    dTempSet = static_cast<double>(temp);
 }
 
-void CController::IncreaseTemp()
-{
-  dTempSet++;
+void CController::IncreaseTemp() {
+    dTempSet += 1.0;
 }
 
-void CController::DecreaseTemp()
-{
-  dTempSet--;
+void CController::DecreaseTemp() {
+    dTempSet -= 1.0;
 }
 
-double CController::GiveTemp()
-{
-  return dTempSet;
+double CController::GiveTemp() const {
+    return dTempSet;
 }
 
-void CController::Control()
-{
-  if (room1->GiveTem() < dTempSet - 0.5) { cond->SetAirConditionerOFF(); }
-  if (room1->GiveTem() > dTempSet + 0.5) { cond->SetAirConditionerON(); }
+void CController::Control() {
+    double currentTemp = room1->GiveTem();
+    
+    // Hysteresis control with 0.5°C deadband
+    if (currentTemp < dTempSet - 0.5) {
+        cond->SetAirConditionerOFF();  // Too cold, turn off cooling
+    } 
+    else if (currentTemp > dTempSet + 0.5) {
+        cond->SetAirConditionerON();   // Too hot, turn on cooling
+    }
+    // Otherwise, maintain current state
 }
+

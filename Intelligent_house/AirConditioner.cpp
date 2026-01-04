@@ -1,31 +1,22 @@
 #include "AirConditioner.h"
-#define _CRT_SECURE_NO_WARNINGS
-#include <string.h>
-#include <iostream>
-#include <stdlib.h>
 
-using namespace std;
-
-CAirConditioner::CAirConditioner()
-{
-  iMyStatus = 0; 
+CAirConditioner::CAirConditioner() : iMyStatus(0) {
+    // C++11: Member initializer list
 }
 
-CAirConditioner::~CAirConditioner()
-{
+CAirConditioner::~CAirConditioner() {
+    // Destructor
 }
 
-void CAirConditioner::SetAirConditionerON()
-{
-  iMyStatus = 1;
+void CAirConditioner::SetAirConditionerON() {
+    iMyStatus = 1;
 }
 
-void CAirConditioner::SetAirConditionerOFF()
-{
-  iMyStatus = 0;
+void CAirConditioner::SetAirConditionerOFF() {
+    iMyStatus = 0;
 }
 
-int CAirConditioner::GiveStatus()
-{
-  return iMyStatus;
+int CAirConditioner::GiveStatus() const {
+    return iMyStatus;
 }
+

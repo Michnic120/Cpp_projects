@@ -1,158 +1,225 @@
-#include<iostream>
-#include<string>
-#include<vector>
-#include<windows.h>
-#include<conio.h>
-#include<algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+#include <chrono>
+#include <sstream>
 
-using namespace std;
-
-struct Event
-{
+// Modern C++11/14 implementation with chrono for time handling
+struct Event {
     int minute, hour, day, month, year;
-    string name, desc;
-
-    Event(int mi, int ho, int d, int m, int y, string n, string des)
-        : minute(mi), hour(ho), day(d), month(m), year(y), name(n), desc(des) {}
+    std::string name, desc;
+    
+    Event(int mi, int ho, int d, int m, int y, std::string n, std::string des)
+        : minute(mi), hour(ho), day(d), month(m), year(y), 
+          name(std::move(n)), desc(std::move(des)) {}
+    
+    // C++14 comparison operator for sorting
+    bool operator<(const Event& other) const {
+        if (year != other.year) return year < other.year;
+        if (month != other.month) return month < other.month;
+        if (day != other.day) return day < other.day;
+        if (hour != other.hour) return hour < other.hour;
+        return minute < other.minute;
+    }
+    
+    // Convert to time_point for validation (C++11)
+    bool isValid() const {
+        if (month < 1 || month > 12) return false;
+        if (day < 1 || day > 31) return false;
+        if (hour < 0 || hour > 23) return false;
+        if (minute < 0 || minute > 59) return false;
+        
+        // Check days in month
+        const std::vector<int> daysInMonth = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        int maxDay = daysInMonth[month - 1];
+        
+        // Leap year check
+        if (month == 2) {
+            bool isLeap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+            if (isLeap) maxDay = 29;
+        }
+        
+        return day <= maxDay;
+    }
 };
 
-typedef vector<Event> Vector;
+using EventVector = std::vector<Event>;
 
-void Enter(Vector &Vec)
-{
-    int mminute, mhour, mday, mmonth, myear;
-    string mname, mdesc;
+class PersonalPlanner {
+private:
+    EventVector events;
     
-    do
-    {
-        cout<<"Put hour: ";      
-        cin>> mhour;
-        if(mhour<0 || mhour>23)  cout<<"Invalid hour entered! ";
-     }
-      while(mhour<0 || mhour>23);
-
-     do
-     {
-        cout<<"Put minutes: ";      
-        cin>> mminute;
-        if(mminute<0 || mminute>59)  cout<<"Invalid minutes entered! ";
-     }
-      while(mminute<0 || mminute>59);
-
-     do
-     {
-        cout<<"Put day: ";      
-        cin>> mday;
-        if(mday<1 || mday>31)  
-            cout<<"Invalid day entered! ";
-     }
-      while(mday<1 || mday>31);
-
-     do
-     {
-        cout<<"Put month: ";    
-        cin>> mmonth;
-        if(mmonth<1 || mmonth>12)  
-            cout<<"Invalid month entered! ";
-     }
-      while(mmonth<1 || mmonth>12);
-
-      do
-      {
-        cout<<"Put year: ";     
-        cin>> myear;
-        if(myear<2017 || myear>2090)  
-            cout<<"Invalid year entered! ";
-       }
-        while(myear<2017 || myear>2090);
-
-       do
-       {
-         cout<<"Put title: ";     
-         cin>> mname; 
-         int w = mname.length();
-         if(w>15)  
-            cout<<"Entered title is too long! (max.15 characters) ";
-         if(w<15)  
-            for(int i=0;i<15-w;i++)mname+=" ";
+    template<typename T>
+    T getValidInput(const std::string& prompt, T min, T max) {
+        T value;
+        while (true) {
+            std::cout << prompt;
+            std::cin >> value;
+            
+            if (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(10000, '\n');
+                std::cout << "Invalid input! ";
+                continue;
+            }
+            
+            if (value >= min && value <= max) {
+                return value;
+            }
+            std::cout << "Value must be between " << min << " and " << max << "! ";
         }
-         while(mname.length()>15);
-
-         cout<<"Put description: "; 
-         cin>> mdesc;
-
-         Vec.push_back(Event(mminute,mhour,mday,mmonth,myear,mname,mdesc));
-         
     }
     
-
-void Print(Vector Vec)
-{
-   system("cls");
-   if(!Vec.empty())
-   {
-     sort(Vec.begin(),Vec.end(), [](const Event&lhs, const Event&rhs){return lhs.minute < rhs.minute;});
-     sort(Vec.begin(),Vec.end(), [](const Event&lhs, const Event&rhs){return lhs.hour   < rhs.hour;});
-     sort(Vec.begin(),Vec.end(), [](const Event&lhs, const Event&rhs){return lhs.day    < rhs.day;});
-     sort(Vec.begin(),Vec.end(), [](const Event&lhs, const Event&rhs){return lhs.month  < rhs.month;});
-     sort(Vec.begin(),Vec.end(), [](const Event&lhs, const Event&rhs){return lhs.year   < rhs.year;});
-
-    cout<<"Hour:  "<<"Date:         "<<"Title:            "<<"Description:   "<<endl;
-    
-    for(int i=0; i<Vec.size(); i++)
-     {
-        if(Vec[i].hour<10)   
-            cout<<"0"; 
-            cout<<Vec[i].hour<<":";
-        if(Vec[i].minute<10) 
-            cout<<"0"; 
-            cout<<Vec[i].minute<<"  ";
-        if(Vec[i].day<10)    
-            cout<<"0"; 
-            cout<<Vec[i].day<<"/";
-        if(Vec[i].month<10)  
-            cout<<"0"; 
-            cout<<Vec[i].month<<"/"<<Vec[i].year;
-        
-        cout<<"    "<<Vec[i].name<<"   "<<Vec[i].desc<<endl;}
-        cout<<endl<<"Press any key to continue.";}
-
-   else
-     cout<<"There are no events added yet! Press any key to continue.";
-  
-  getch();
-}
-
-int main()
-{
-    int sign;
-    Vector V;
-
-    do
-    {
-      system("cls");
-      cout<<"1 - add event, 2 - print all events, 3 - exit  "; cin>>sign;
-      switch(sign)
-      {
-       
-       case 1:
-          Enter(V);
-          break;
-        
-       case 2:
-          Print(V);
-          break;
-       
-       case 3:
-          break;
-       
-       default:
-         cout<<"Try again...";
-         getch();
-      break;
-      }
+    std::string padOrTrim(const std::string& str, size_t length) {
+        if (str.length() > length) {
+            return str.substr(0, length);
+        }
+        return str + std::string(length - str.length(), ' ');
     }
-    while(sign!=3);
+    
+    void clearScreen() {
+        #ifdef _WIN32
+            system("cls");
+        #else
+            std::cout << "\033[2J\033[1;1H";
+        #endif
+    }
+    
+    void waitForEnter() {
+        std::cout << "Press Enter to continue...";
+        std::cin.ignore(10000, '\n');
+        std::cin.get();
+    }
 
+public:
+    void addEvent() {
+        clearScreen();
+        
+        auto hour = getValidInput<int>("Enter hour (0-23): ", 0, 23);
+        auto minute = getValidInput<int>("Enter minutes (0-59): ", 0, 59);
+        auto day = getValidInput<int>("Enter day (1-31): ", 1, 31);
+        auto month = getValidInput<int>("Enter month (1-12): ", 1, 12);
+        
+        // Dynamic year range based on current year
+        auto currentYear = 2024; // Could use chrono to get actual year
+        auto year = getValidInput<int>("Enter year: ", currentYear, 2099);
+        
+        std::cin.ignore(10000, '\n'); // Clear input buffer
+        
+        std::string name;
+        while (true) {
+            std::cout << "Enter title (max 15 chars): ";
+            std::getline(std::cin, name);
+            
+            if (name.empty()) {
+                std::cout << "Title cannot be empty! ";
+                continue;
+            }
+            if (name.length() <= 15) {
+                name = padOrTrim(name, 15);
+                break;
+            }
+            std::cout << "Title too long! ";
+        }
+        
+        std::string desc;
+        std::cout << "Enter description: ";
+        std::getline(std::cin, desc);
+        
+        Event newEvent(minute, hour, day, month, year, name, desc);
+        
+        if (!newEvent.isValid()) {
+            std::cout << "\nWarning: Invalid date entered!\n";
+            waitForEnter();
+            return;
+        }
+        
+        events.push_back(std::move(newEvent));
+        std::cout << "\nEvent added successfully!\n";
+        waitForEnter();
+    }
+    
+    void printAllEvents() {
+        clearScreen();
+        
+        if (events.empty()) {
+            std::cout << "No events scheduled yet!\n";
+            waitForEnter();
+            return;
+        }
+        
+        // Sort events using overloaded operator<
+        std::sort(events.begin(), events.end());
+        
+        std::cout << std::left
+                  << std::setw(8) << "Time"
+                  << std::setw(14) << "Date"
+                  << std::setw(17) << "Title"
+                  << "Description\n";
+        std::cout << std::string(60, '-') << "\n";
+        
+        for (const auto& event : events) {
+            std::ostringstream timeStr, dateStr;
+            
+            timeStr << std::setfill('0') << std::setw(2) << event.hour << ":"
+                    << std::setfill('0') << std::setw(2) << event.minute;
+            
+            dateStr << std::setfill('0') << std::setw(2) << event.day << "/"
+                    << std::setfill('0') << std::setw(2) << event.month << "/"
+                    << event.year;
+            
+            std::cout << std::left
+                      << std::setw(8) << timeStr.str()
+                      << std::setw(14) << dateStr.str()
+                      << std::setw(17) << event.name
+                      << event.desc << "\n";
+        }
+        
+        std::cout << "\n";
+        waitForEnter();
+    }
+    
+    void run() {
+        int choice;
+        
+        do {
+            clearScreen();
+            std::cout << "=== Personal Planner ===\n\n";
+            std::cout << "1 - Add event\n";
+            std::cout << "2 - View all events\n";
+            std::cout << "3 - Exit\n\n";
+            std::cout << "Choice: ";
+            std::cin >> choice;
+            
+            if (std::cin.fail()) {
+                std::cin.clear();
+                std::cin.ignore(10000, '\n');
+                choice = 0;
+            }
+            
+            switch (choice) {
+                case 1:
+                    addEvent();
+                    break;
+                case 2:
+                    printAllEvents();
+                    break;
+                case 3:
+                    std::cout << "Goodbye!\n";
+                    break;
+                default:
+                    std::cout << "Invalid choice!\n";
+                    waitForEnter();
+                    break;
+            }
+        } while (choice != 3);
+    }
+};
+
+int main() {
+    PersonalPlanner planner;
+    planner.run();
     return 0;
 }
